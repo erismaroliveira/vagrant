@@ -27,6 +27,8 @@ Vagrant.configure("2") do |config|
     vmapp.vm.box = "ubuntu/focal64"
 
     vmapp.vm.network "private_network", ip: "172.28.128.9"
+    vmapp.vm.network "public_network", bridge: "Realtek PCIe GbE Family Controller"
+    
     vmapp.vm.network "forwarded_port", guest: 80, host: 8080
     vmapp.vm.synced_folder "dados", "/persistencia", disabled: false
 
