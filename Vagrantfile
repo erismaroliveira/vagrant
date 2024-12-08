@@ -1,6 +1,9 @@
+QTD_MAQUINAS=2
+BOX_PADRAO="ubuntu/focal64"
+
 Vagrant.configure("2") do |config|
 
-  config.vm.box = "ubuntu/focal64"
+  config.vm.box = BOX_PADRAO
 
   # config.vm.network "private_network", type: "dhcp"
 
@@ -22,33 +25,34 @@ Vagrant.configure("2") do |config|
     end
   end
 
-  config.vm.define "app" do |vmapp|
+  (1..QTD_MAQUINAS).each do |n|
+    config.vm.define "app#{n}" do |vmapp|
 
-    vmapp.vm.box = "ubuntu/focal64"
+      vmapp.vm.box = BOX_PADRAO
 
-    vmapp.vm.network "private_network", ip: "172.28.128.9"
-    vmapp.vm.network "public_network", bridge: "Realtek PCIe GbE Family Controller"
-    
-    vmapp.vm.network "forwarded_port", guest: 80, host: 8080
-    vmapp.vm.synced_folder "dados", "/persistencia", disabled: false
+      vmapp.vm.network "private_network", ip: "172.28.128.9#{n}"
+      vmapp.vm.network "public_network", bridge: "Realtek PCIe GbE Family Controller"
+      
+      vmapp.vm.network "forwarded_port", guest: 80, host: "808#{n}"
+      vmapp.vm.synced_folder "dados", "/persistencia", disabled: false
 
-    vmapp.vm.provider "virtualbox" do |vb|
-      vb.gui = false
-    
-      vb.name = "VM_Application"
-      vb.memory = "1024"
-      vb.cpus = 2
-      vb.customize ["modifyvm", :id, "--cpuexecutioncap", "100"]
+      vmapp.vm.provider "virtualbox" do |vb|
+        vb.gui = false
+      
+        vb.name = "VM_Application#{n}"
+        vb.memory = "1024"
+        vb.cpus = 2
+        vb.customize ["modifyvm", :id, "--cpuexecutioncap", "100"]
+      end
+
+      vmapp.vm.provision "shell", inline: <<-SHELL
+        apt-get update
+        apt-get install -y nginx
+        rm /var/www/html/index.nginx-debian.html
+        cp /persistencia/index.nginx-debian.html /var/www/html/
+      SHELL
+
+      vmapp.vm.provision "shell", path: "install_nodejs.sh"
     end
-
-    vmapp.vm.provision "shell", inline: <<-SHELL
-      apt-get update
-      apt-get install -y nginx
-      rm /var/www/html/index.nginx-debian.html
-      cp /persistencia/index.nginx-debian.html /var/www/html/
-    SHELL
-
-    vmapp.vm.provision "shell", path: "install_nodejs.sh"
   end
-
 end
